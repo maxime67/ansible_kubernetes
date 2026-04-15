@@ -51,7 +51,7 @@ resource "proxmox_virtual_environment_vm" "workers" {
   }
 
   cpu { cores = 1 }
-  memory { dedicated = 1024 }
+  memory { dedicated = 2048 }
 
   agent { enabled = true }
 
