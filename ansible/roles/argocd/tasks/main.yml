@@ -1,0 +1,72 @@
+---
+- name: Installer la librairie Python kubernetes
+  apt:
+    name: python3-kubernetes
+    state: present
+    update_cache: yes
+
+- name: Créer le namespace ArgoCD
+  kubernetes.core.k8s:
+    name: "{{ argocd_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Installer Helm
+  shell: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  args:
+    creates: /usr/local/bin/helm
+
+- name: Ajouter le repo Helm ArgoCD
+  kubernetes.core.helm_repository:
+    name: argo
+    repo_url: https://argoproj.github.io/argo-helm
+
+- name: Installer ArgoCD via Helm
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: argo/argo-cd
+    chart_version: "{{ argocd_version }}"
+    release_namespace: "{{ argocd_namespace }}"
+    create_namespace: false
+    wait: true
+    wait_timeout: 300s
+    values:
+      server:
+        service:
+          type: NodePort
+          nodePortHttp: 30080
+          nodePortHttps: 30443
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Déployer l'App of Apps
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: argoproj.io/v1alpha1
+      kind: Application
+      metadata:
+        name: app-of-apps
+        namespace: "{{ argocd_namespace }}"
+        finalizers:
+          - resources-finalizer.argocd.argoproj.io
+      spec:
+        project: default
+        source:
+          repoURL: "{{ argocd_repo_url }}"
+          targetRevision: HEAD
+          path: "{{ argocd_gitops_path }}"
+        destination:
+          server: https://kubernetes.default.svc
+          namespace: "{{ argocd_namespace }}"
+        syncPolicy:
+          automated:
+            prune: true
+            selfHeal: true
+          syncOptions:
+            - CreateNamespace=true
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml

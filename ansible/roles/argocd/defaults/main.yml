@@ -1,0 +1,4 @@
+argocd_namespace: argocd
+argocd_version: "7.8.26"
+argocd_repo_url: "https://github.com/maxime67/ansible_kubernetes.git"
+argocd_gitops_path: "gitops/apps"

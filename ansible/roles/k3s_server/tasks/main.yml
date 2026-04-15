@@ -1,0 +1,40 @@
+---
+- name: Installer k3s server
+  shell: curl -sfL https://get.k3s.io | sh -
+  args:
+    creates: /usr/local/bin/k3s
+
+- name: Attendre que le token soit disponible
+  wait_for:
+    path: /var/lib/rancher/k3s/server/node-token
+    timeout: 60
+
+- name: Lire le token k3s
+  slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_token_raw
+
+- name: Distribuer le token et l'URL aux workers
+  set_fact:
+    k3s_token: "{{ k3s_token_raw['content'] | b64decode | trim }}"
+    k3s_url: "https://{{ ansible_host }}:6443"
+  delegate_to: "{{ item }}"
+  delegate_facts: true
+  loop: "{{ groups['workers'] }}"
+
+- name: Créer le répertoire .kube pour debian
+  file:
+    path: /home/debian/.kube
+    state: directory
+    owner: debian
+    group: debian
+    mode: '0750'
+
+- name: Copier kubeconfig pour debian
+  copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: /home/debian/.kube/config
+    remote_src: yes
+    owner: debian
+    group: debian
+    mode: '0600'
