@@ -1,0 +1,50 @@
+---
+- name: Ajouter le repo Helm MetalLB
+  become: false
+  command: helm repo add --force-update metallb https://metallb.github.io/metallb
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+
+- name: Mettre à jour les repos Helm
+  become: false
+  command: helm repo update
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+
+- name: Installer MetalLB
+  become: false
+  command: >
+    helm upgrade --install metallb metallb/metallb
+    --namespace metallb-system
+    --create-namespace
+    --wait
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+
+- name: Copier la configuration MetalLB
+  copy:
+    dest: /tmp/metallb-config.yaml
+    content: |
+      apiVersion: metallb.io/v1beta1
+      kind: IPAddressPool
+      metadata:
+        name: homelab-pool
+        namespace: metallb-system
+      spec:
+        addresses:
+          - {{ metallb_ip_range }}
+      ---
+      apiVersion: metallb.io/v1beta1
+      kind: L2Advertisement
+      metadata:
+        name: homelab-l2
+        namespace: metallb-system
+      spec:
+        ipAddressPools:
+          - homelab-pool
+
+- name: Appliquer la configuration MetalLB
+  become: false
+  command: kubectl apply -f /tmp/metallb-config.yaml
+  environment:
+    KUBECONFIG: /home/debian/.kube/config

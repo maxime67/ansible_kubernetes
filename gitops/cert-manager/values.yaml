@@ -1,0 +1,11 @@
+# Surcharge des valeurs du chart cert-manager
+# https://artifacthub.io/packages/helm/cert-manager/cert-manager
+
+installCRDs: true
+
+# Exemple :
+# replicaCount: 1
+# resources:
+#   limits:
+#     cpu: 100m
+#     memory: 128Mi

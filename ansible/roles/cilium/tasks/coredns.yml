@@ -1,0 +1,24 @@
+---
+- name: Copier le ConfigMap CoreDNS
+  copy:
+    src: coredns-configmap.yaml
+    dest: /tmp/coredns-configmap.yaml
+
+- name: Appliquer la configuration CoreDNS
+  become: false
+  command: kubectl apply -f /tmp/coredns-configmap.yaml
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+
+- name: Redémarrer CoreDNS
+  become: false
+  command: kubectl rollout restart deployment/coredns -n kube-system
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+
+- name: Attendre que CoreDNS soit prêt
+  become: false
+  command: kubectl rollout status deployment/coredns -n kube-system --timeout=60s
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+  changed_when: false

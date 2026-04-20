@@ -9,13 +9,16 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
-  source:
-    repoURL: https://charts.jetstack.io
-    chart: cert-manager
-    targetRevision: "v1.16.3"
-    helm:
-      values: |
-        installCRDs: true
+  sources:
+    - repoURL: https://charts.jetstack.io
+      chart: cert-manager
+      targetRevision: "v1.16.3"
+      helm:
+        valueFiles:
+          - $values/gitops/cert-manager/values.yaml
+    - repoURL: https://github.com/maxime67/ansible_kubernetes.git
+      targetRevision: HEAD
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager

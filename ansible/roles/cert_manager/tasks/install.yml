@@ -1,0 +1,29 @@
+---
+- name: Ajouter le repo Helm cert-manager
+  become: false
+  command: helm repo add --force-update jetstack https://charts.jetstack.io
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+
+- name: Mettre à jour les repos Helm
+  become: false
+  command: helm repo update
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+
+- name: Installer cert-manager
+  become: false
+  command: >
+    helm upgrade --install cert-manager jetstack/cert-manager
+    --namespace cert-manager
+    --create-namespace
+    --set crds.enabled=true
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+
+- name: Attendre que cert-manager soit prêt
+  become: false
+  command: kubectl rollout status deployment/cert-manager -n cert-manager --timeout=120s
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+  changed_when: false

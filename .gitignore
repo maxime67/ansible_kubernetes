@@ -8,6 +8,7 @@ terraform/terraform.tfvars
 # Ansible
 ansible/inventory.yml
 ansible/*.retry
+ansible/secrets.yml
 
 # Divers
 *.log

@@ -1,0 +1,42 @@
+---
+- name: Créer le répertoire de la CA
+  become: false
+  file:
+    path: /home/debian/homelab-ca
+    state: directory
+    mode: '0700'
+
+- name: Générer la clé privée
+  become: false
+  command: openssl genrsa -out /home/debian/homelab-ca/ca.key 4096
+  args:
+    creates: /home/debian/homelab-ca/ca.key
+
+- name: Générer le certificat auto-signé (10 ans)
+  become: false
+  command: >
+    openssl req -new -x509 -days 3650
+    -key /home/debian/homelab-ca/ca.key
+    -subj "/CN=HomeLabCA/O=HomeLab"
+    -addext "basicConstraints=critical,CA:TRUE"
+    -addext "keyUsage=critical,keyCertSign,cRLSign"
+    -out /home/debian/homelab-ca/ca.crt
+  args:
+    creates: /home/debian/homelab-ca/ca.crt
+
+- name: Créer le secret Kubernetes pour la CA
+  become: false
+  shell: |
+    kubectl create secret tls homelab-ca \
+      --cert=/home/debian/homelab-ca/ca.crt \
+      --key=/home/debian/homelab-ca/ca.key \
+      --namespace=cert-manager \
+      --dry-run=client -o yaml | kubectl apply -f -
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+
+- name: Récupérer le certificat CA en local
+  fetch:
+    src: /home/debian/homelab-ca/ca.crt
+    dest: "{{ playbook_dir }}/../../ca.crt"
+    flat: true

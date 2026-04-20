@@ -1,0 +1,4 @@
+---
+- import_tasks: init.yml
+- import_tasks: kubeconfig.yml
+- import_tasks: join_command.yml

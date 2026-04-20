@@ -1,0 +1,8 @@
+---
+- name: Initialiser le control plane
+  command: >
+    kubeadm init
+    --pod-network-cidr={{ pod_network_cidr }}
+    --kubernetes-version={{ kubernetes_version }}
+  args:
+    creates: /etc/kubernetes/admin.conf

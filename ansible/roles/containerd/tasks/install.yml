@@ -1,0 +1,55 @@
+---
+- name: Installer les pré-requis apt
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+    state: present
+    update_cache: yes
+
+- name: Créer le répertoire keyrings
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Ajouter la clé GPG Docker
+  get_url:
+    url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+    dest: /etc/apt/keyrings/docker.asc
+    mode: '0644'
+
+- name: Ajouter le dépôt Docker
+  apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+    state: present
+    filename: docker
+
+- name: Installer containerd
+  apt:
+    name: containerd.io
+    state: present
+    update_cache: yes
+
+- name: Générer la configuration containerd par défaut
+  shell: containerd config default > /etc/containerd/config.toml
+
+- name: Activer le cgroup systemd
+  replace:
+    path: /etc/containerd/config.toml
+    regexp: 'SystemdCgroup = false'
+    replace: 'SystemdCgroup = true'
+
+- name: Activer le plugin CRI
+  lineinfile:
+    path: /etc/containerd/config.toml
+    regexp: '^disabled_plugins'
+    line: 'disabled_plugins = []'
+
+- name: Redémarrer containerd
+  systemd:
+    name: containerd
+    enabled: true
+    state: restarted

@@ -1,0 +1,40 @@
+# Configuration Longhorn pour K3s 3 masters
+csi:
+  kubeletRootDir: "/var/lib/kubelet"
+
+persistence:
+  defaultClass: true
+  defaultClassReplicaCount: "2"  # 2 réplicas sur 3 nœuds (bon compromis espace/redondance)
+  reclaimPolicy: Retain
+
+defaultSettings:
+  backupTarget: ""  # À configurer plus tard pour les backups S3/NFS
+  defaultReplicaCount: "2"
+  guaranteedEngineManagerCPU: 5
+  guaranteedReplicaManagerCPU: 5
+
+service:
+  ui:
+    type: ClusterIP  # Accessible uniquement via Ingress (sera configuré plus tard)
+
+longhornManager:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+longhornDriver:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+metrics:
+  serviceMonitor:
+    enabled: true

@@ -1,0 +1,35 @@
+---
+- name: Ajouter le repo Helm Longhorn
+  become: false
+  command: helm repo add --force-update longhorn https://charts.longhorn.io
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+
+- name: Mettre à jour les repos Helm
+  become: false
+  command: helm repo update
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+
+- name: Copier le fichier de values Longhorn
+  copy:
+    src: "{{ playbook_dir }}/../gitops/longhorn/values.yaml"
+    dest: /tmp/longhorn-values.yaml
+
+- name: Installer Longhorn
+  become: false
+  command: >
+    helm upgrade --install longhorn longhorn/longhorn
+    --namespace longhorn-system
+    --create-namespace
+    --wait
+    -f /tmp/longhorn-values.yaml
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+
+- name: Attendre que Longhorn soit prêt
+  become: false
+  command: kubectl rollout status daemonset/longhorn-manager -n longhorn-system --timeout=300s
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+  changed_when: false

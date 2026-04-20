@@ -1,16 +1,19 @@
 resource "proxmox_virtual_environment_vm" "control_plane" {
   name      = "k8s-cp-01"
-  node_name = var.proxmox_node
+  node_name = var.proxmox_nodes[0]
   vm_id     = 200
   on_boot   = true
 
   clone {
-    vm_id = var.template_id
-    full  = true
+    vm_id     = var.template_id
+    node_name = var.template_node
+    full      = true
   }
 
-  cpu { cores = 2 }
-  memory { dedicated = 2048 }
+  boot_order = ["scsi0"]
+
+  cpu { cores = var.control_plan__cpu_number }
+  memory { dedicated = var.control_plan_memory_size }
 
   agent { enabled = true }
 
@@ -22,7 +25,7 @@ resource "proxmox_virtual_environment_vm" "control_plane" {
   disk {
     datastore_id = var.datastore_id
     interface    = "scsi0"
-    size         = 20
+    size         = var.control_plan_disk_size
     discard      = "on"
   }
 
@@ -39,19 +42,22 @@ resource "proxmox_virtual_environment_vm" "control_plane" {
 }
 
 resource "proxmox_virtual_environment_vm" "workers" {
-  count     = 2
+  count     = length(var.proxmox_nodes) - 1
   name      = "k8s-worker-0${count.index + 1}"
-  node_name = var.proxmox_node
+  node_name = var.proxmox_nodes[count.index + 1]
   vm_id     = 201 + count.index
   on_boot   = true
 
   clone {
-    vm_id = var.template_id
-    full  = true
+    vm_id     = var.template_id
+    node_name = var.template_node
+    full      = true
   }
 
-  cpu { cores = 1 }
-  memory { dedicated = 2048 }
+  boot_order = ["scsi0"]
+
+  cpu { cores = var.worker_cpu_number }
+  memory { dedicated = var.worker_memory_size }
 
   agent { enabled = true }
 
@@ -63,7 +69,7 @@ resource "proxmox_virtual_environment_vm" "workers" {
   disk {
     datastore_id = var.datastore_id
     interface    = "scsi0"
-    size         = 20
+    size         = var.worker_disk_size
     discard      = "on"
   }
 

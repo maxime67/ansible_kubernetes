@@ -1,0 +1,25 @@
+---
+- name: Attendre que le webhook cert-manager soit prêt
+  become: false
+  command: kubectl rollout status deployment/cert-manager-webhook -n cert-manager --timeout=120s
+  environment:
+    KUBECONFIG: /home/debian/.kube/config
+  changed_when: false
+
+- name: Copier le manifest ClusterIssuer
+  copy:
+    dest: /tmp/homelab-ca-issuer.yaml
+    content: |
+      apiVersion: cert-manager.io/v1
+      kind: ClusterIssuer
+      metadata:
+        name: homelab-ca-issuer
+      spec:
+        ca:
+          secretName: homelab-ca
+
+- name: Appliquer le ClusterIssuer
+  become: false
+  command: kubectl apply -f /tmp/homelab-ca-issuer.yaml
+  environment:
+    KUBECONFIG: /home/debian/.kube/config

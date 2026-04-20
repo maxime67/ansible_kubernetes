@@ -1,0 +1,14 @@
+---
+- name: Installer les pré-requis stockage (Longhorn)
+  apt:
+    name:
+      - open-iscsi
+      - nfs-common
+    state: present
+    update_cache: yes
+
+- name: Activer et démarrer iscsid
+  systemd:
+    name: iscsid
+    enabled: true
+    state: started
